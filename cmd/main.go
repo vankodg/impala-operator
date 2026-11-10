@@ -30,6 +30,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -154,8 +155,16 @@ func main() {
 		metricsServerOptions.KeyName = metricsCertKey
 	}
 
+	// WATCH_NAMESPACE restricts every watch to the listed namespaces, so the
+	// manager needs RBAC only there (namespace-scoped installs, e.g. ACE strict RBAC).
+	watched := watchNamespaces(os.Getenv("WATCH_NAMESPACE"))
+	if watched != nil {
+		setupLog.Info("Watching only the listed namespaces", "namespaces", os.Getenv("WATCH_NAMESPACE"))
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
+		Cache:                  cache.Options{DefaultNamespaces: watched},
 		Metrics:                metricsServerOptions,
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
@@ -215,6 +224,22 @@ func main() {
 		setupLog.Error(err, "Failed to run manager")
 		os.Exit(1)
 	}
+}
+
+// watchNamespaces parses WATCH_NAMESPACE, a comma-separated namespace list, into
+// the manager cache's namespace set. It returns nil, meaning every namespace,
+// when the list is empty.
+func watchNamespaces(value string) map[string]cache.Config {
+	namespaces := map[string]cache.Config{}
+	for ns := range strings.SplitSeq(value, ",") {
+		if ns = strings.TrimSpace(ns); ns != "" {
+			namespaces[ns] = cache.Config{}
+		}
+	}
+	if len(namespaces) == 0 {
+		return nil
+	}
+	return namespaces
 }
 
 // detectOperatorNamespace returns the namespace the manager runs in: the

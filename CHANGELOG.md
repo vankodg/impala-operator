@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.2
+
+### Added
+
+- Namespace-scoped installs. The manager reads `WATCH_NAMESPACE`, a
+  comma-separated list, and watches only those namespaces, so it needs RBAC
+  only there. Unset keeps the cluster-wide watch.
+- Chart values `manager.watchNamespaces` (sets `WATCH_NAMESPACE`) and
+  `rbac.create` (set `false` when the platform grants the manager's RBAC to an
+  existing ServiceAccount, as ACE strict RBAC does). With the defaults the
+  chart renders exactly what 0.1.1 did.
+
 ## 0.1.1
 
 ### Fixed
