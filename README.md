@@ -55,6 +55,23 @@ kubectl run -it --rm shell --image=apache/impala:4.5.2-impala_quickstart_client 
   --restart=Never -- impala-shell -i impalacluster-sample-coordinator:21050
 ```
 
+### Namespace-scoped install
+
+By default the manager watches every namespace and the chart grants it a
+ClusterRole. To confine it, list the namespaces it may manage; the manager then
+reads them from `WATCH_NAMESPACE` and needs RBAC only there. Include the release
+namespace, which holds the leader-election lease. If the platform provides the
+manager's RBAC, as ACE strict RBAC does, also skip the chart's own RBAC and use
+the platform's ServiceAccount:
+
+```sh
+helm install impala-operator dist/chart -n impala-operator \
+  --set 'manager.watchNamespaces={impala-operator,team-a}' \
+  --set rbac.create=false \
+  --set serviceAccount.enabled=false --set serviceAccount.name=impala-operator \
+  --set metrics.enabled=false
+```
+
 ## The ImpalaCluster resource
 
 ```yaml

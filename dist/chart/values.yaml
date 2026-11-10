@@ -27,6 +27,13 @@ manager:
   args:
     - --leader-elect
 
+  ## Namespaces the manager watches (passed as WATCH_NAMESPACE).
+  ## Empty (default): every namespace. List the release namespace and every namespace
+  ## holding ImpalaClusters when the operator only has RBAC there, e.g. under ACE
+  ## strict RBAC, where ACE passes the list as .WatchNamespaces.
+  ##
+  watchNamespaces: []
+
   ## Health probes.
   ## The manager serves the liveness (/healthz) and readiness (/readyz) endpoints on this port.
   ##
@@ -114,6 +121,12 @@ manager:
 ## RBAC configuration
 ##
 rbac:
+  ## Create the manager's Roles/ClusterRoles and bindings.
+  ## Set false when the platform grants them to an existing ServiceAccount
+  ## (serviceAccount.enabled=false), e.g. ACE strict RBAC.
+  ##
+  create: true
+
   ## RBAC resource scope
   ## - false (default): ClusterRole/ClusterRoleBinding (all namespaces)
   ## - true: Role/RoleBinding (release namespace only)
